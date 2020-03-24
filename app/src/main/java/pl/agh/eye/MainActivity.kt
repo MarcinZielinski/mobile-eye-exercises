@@ -1,14 +1,24 @@
 package pl.agh.eye
 
 import android.os.Bundle
+import android.util.Log
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
 
 import kotlinx.android.synthetic.main.activity_main.*
+import org.opencv.android.OpenCVLoader
 
 class MainActivity : AppCompatActivity() {
+
+    init {
+        if (OpenCVLoader.initDebug()) {
+            Log.d("Main", "OpenCV is configured or connected successfully.")
+        } else {
+            Log.d("Main", "OpenCV is NOT working or loaded.")
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
