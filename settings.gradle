@@ -1,2 +1,3 @@
 rootProject.name='mobile-eye-exercises'
 include ':app'
+include ':openCVLibrary'
