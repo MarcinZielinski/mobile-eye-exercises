@@ -18,7 +18,10 @@ import org.opencv.core.Core
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
+import kotlinx.android.synthetic.main.show_camera.*
 
+
+const val APPLICATION_SPECIFIC_PERMISSION_CODE = 7
 
 class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     // Loads camera view of OpenCV for us to use. This lets us see using OpenCV
@@ -47,14 +50,20 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         }
     }
 
+    init {
+        Log.i(
+            TAG,
+            "Instantiated new " + this.javaClass
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.i(TAG, "called onCreate")
         super.onCreate(savedInstanceState)
         checkAndRequestPermissions()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContentView(R.layout.show_camera)
-        mOpenCvCameraView =
-            findViewById<View>(R.id.show_camera_activity_java_surface_view) as JavaCameraView
+        mOpenCvCameraView = show_camera_activity_java_surface_view
         mOpenCvCameraView!!.visibility = SurfaceView.VISIBLE
         mOpenCvCameraView!!.setCvCameraViewListener(this)
         mOpenCvCameraView!!.enableView()
@@ -62,7 +71,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
     public override fun onPause() {
         super.onPause()
-        if (mOpenCvCameraView != null) mOpenCvCameraView!!.disableView()
+        mOpenCvCameraView?.disableView()
     }
 
     public override fun onResume() {
@@ -84,7 +93,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
     public override fun onDestroy() {
         super.onDestroy()
-        if (mOpenCvCameraView != null) mOpenCvCameraView!!.disableView()
+        mOpenCvCameraView?.disableView()
     }
 
     override fun onCameraViewStarted(width: Int, height: Int) {
@@ -114,13 +123,6 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         private const val TAG = "OCVSample::Activity"
     }
 
-    init {
-        Log.i(
-            TAG,
-            "Instantiated new " + this.javaClass
-        )
-    }
-
     private fun checkAndRequestPermissions(): Boolean {
         val camera = ContextCompat.checkSelfPermission(
             this,
@@ -134,7 +136,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
             ActivityCompat.requestPermissions(
                 this,
                 listPermissionsNeeded.toTypedArray(),
-                7
+                APPLICATION_SPECIFIC_PERMISSION_CODE
             )
             return false
         }
