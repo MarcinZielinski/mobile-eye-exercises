@@ -1,16 +1,23 @@
 package pl.agh.eye
 
+import android.Manifest
+import android.app.PendingIntent.getActivity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import com.google.android.material.snackbar.Snackbar
-import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
-
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_main.*
 import org.opencv.android.OpenCVLoader
 
-class MainActivity : AppCompatActivity() {
+
+class MainActivity : AppCompatActivity(){
+
 
     init {
         if (OpenCVLoader.initDebug()) {
@@ -46,4 +53,7 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
+
+
+
 }

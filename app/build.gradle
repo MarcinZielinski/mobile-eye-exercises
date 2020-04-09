@@ -15,12 +15,6 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        externalNativeBuild {
-            cmake {
-                cppFlags "-std=c++11"
-                arguments "-DANDROID_STL=c++_shared"
-            }
-        }
     }
 
     buildTypes {
@@ -32,15 +26,6 @@ android {
 
 // To inline the bytecode built with JVM target 1.8 into
 // bytecode that is being built with JVM target 1.6. (e.g. navArgs)
-
-    externalNativeBuild {
-        cmake {
-            path "src/main/cpp/CMakeLists.txt"
-            version "3.10.2"
-        }
-    }
-
-    ndkVersion "20.0.5594570"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -55,15 +40,6 @@ android {
     }
     kotlinOptions {
         jvmTarget = "1.8"
-    }
-
-    splits {
-        abi {
-            enable true
-            reset()
-            include 'x86', 'arm64-v8a', 'armeabi-v7a', 'x86_64'
-            universalApk true
-        }
     }
 
 }
