@@ -1,22 +1,16 @@
 package pl.agh.eye
 
-import android.Manifest
-import android.app.PendingIntent.getActivity
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_main.*
 import org.opencv.android.OpenCVLoader
 
 
-class MainActivity : AppCompatActivity(){
+class MainActivity : AppCompatActivity() {
 
 
     init {
@@ -34,7 +28,7 @@ class MainActivity : AppCompatActivity(){
 
         fab.setOnClickListener { view ->
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()
+                .setAction("Action", null).show()
         }
     }
 
@@ -53,7 +47,6 @@ class MainActivity : AppCompatActivity(){
             else -> super.onOptionsItemSelected(item)
         }
     }
-
 
 
 }

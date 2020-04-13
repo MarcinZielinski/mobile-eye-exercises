@@ -6,19 +6,22 @@ import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
 import android.view.SurfaceView
-import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import org.opencv.android.*
+import kotlinx.android.synthetic.main.show_camera.*
+import org.opencv.android.BaseLoaderCallback
+import org.opencv.android.CameraBridgeViewBase
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2
+import org.opencv.android.LoaderCallbackInterface
+import org.opencv.android.OpenCVLoader
 import org.opencv.core.Core
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
-import kotlinx.android.synthetic.main.show_camera.*
+import pl.agh.eye.exercise.Exercise
 
 
 const val APPLICATION_SPECIFIC_PERMISSION_CODE = 7
@@ -26,9 +29,11 @@ const val APPLICATION_SPECIFIC_PERMISSION_CODE = 7
 class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     // Loads camera view of OpenCV for us to use. This lets us see using OpenCV
     private var mOpenCvCameraView: CameraBridgeViewBase? = null
+
     // Used in Camera selection from menu (when implemented)
     private val mIsJavaCamera = true
     private val mItemSwitchCamera: MenuItem? = null
+
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
     var mRgba: Mat? = null
     var mRgbaF: Mat? = null
@@ -67,6 +72,9 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         mOpenCvCameraView!!.visibility = SurfaceView.VISIBLE
         mOpenCvCameraView!!.setCvCameraViewListener(this)
         mOpenCvCameraView!!.enableView()
+
+        val exercise = intent.getSerializableExtra("exercise") as Exercise
+        Log.i(TAG, "############################### " + exercise.title)
     }
 
     public override fun onPause() {

@@ -5,19 +5,20 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
+import android.widget.AdapterView.OnItemClickListener
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.findNavController
+import kotlinx.android.synthetic.main.fragment_first.*
+import pl.agh.eye.exercise.ExerciseService
 
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
  */
-class FirstFragment : Fragment(){
+class FirstFragment : Fragment() {
 
     override fun onCreateView(
-            inflater: LayoutInflater, container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_first, container, false)
@@ -26,11 +27,18 @@ class FirstFragment : Fragment(){
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val myIntent = Intent(activity, CameraActivity::class.java)
-        startActivity(myIntent)
+        val exerciseService = ExerciseService()
+        val exercises = exerciseService.exercises
 
-        view.findViewById<Button>(R.id.button_first).setOnClickListener {
-            findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
+        val listAdapter = ExerciseAdapter(context!!, exercises)
+        exercisesGridView.adapter = listAdapter
+
+
+        exercisesGridView.onItemClickListener = OnItemClickListener { _, _, position, _ ->
+            val exercise = exercises[position]
+            val myIntent = Intent(activity, CameraActivity::class.java)
+            myIntent.putExtra("exercise", exercise)
+            startActivity(myIntent)
         }
     }
 
