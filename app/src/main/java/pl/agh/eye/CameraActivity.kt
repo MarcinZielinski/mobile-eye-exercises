@@ -166,19 +166,30 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         Log.i(TAG, "camera view stopped")
     }
 
-    override fun onCameraFrame(inputFrame: CvCameraViewFrame): Mat { // TODO Auto-generated method stub
+    override fun onCameraFrame(inputFrame: CvCameraViewFrame): Mat {
         mRgba = inputFrame.rgba()
         mGray = inputFrame.gray()
 
         val faces = MatOfRect()
-
         faceClassifier?.detectMultiScale(mGray, faces,1.3, 5)
 
         val facesArray = faces.toArray()
+        if (facesArray.isNotEmpty()) {
+            val face = facesArray[0]
 
-        for (face in facesArray) {
             Imgproc.rectangle(mRgba, Point(face.x.toDouble(), face.y.toDouble()),
                 Point((face.x + face.width).toDouble(), (face.y + face.height).toDouble()), Scalar(255.0, 0.0, 0.0, 255.0), 3)
+
+            val halfFace = Rect(face.x, face.y, face.width, face.height / 2)
+            val grayHalfFace = Mat(mGray, halfFace)
+            val eyes = MatOfRect()
+            eyeClassifier?.detectMultiScale(grayHalfFace, eyes, 1.3, 5)
+
+            val eyesArray = eyes.toArray()
+            for (eye in eyesArray) {
+                Imgproc.rectangle(mRgba, Point((face.x + eye.x).toDouble(), (face.y + eye.y).toDouble()),
+                    Point((face.x + eye.x + eye.width).toDouble(), (face.y + eye.y + eye.height).toDouble()), Scalar(0.0, 255.0, 255.0, 255.0), 3)
+            }
         }
 
         // Rotate mRgba 90 degrees
