@@ -18,9 +18,7 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2
 import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
-import org.opencv.core.Core
-import org.opencv.core.CvType
-import org.opencv.core.Mat
+import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
 import org.opencv.objdetect.CascadeClassifier
 import pl.agh.eye.exercise.Exercise
@@ -42,12 +40,13 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     // cascades
     private var faceClassifier: CascadeClassifier? = null
     private var eyeClassifier: CascadeClassifier? = null
-    private var mCascadeFile: File? = null
 
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
     var mRgba: Mat? = null
+    var mGray: Mat? = null
     var mRgbaF: Mat? = null
     var mRgbaT: Mat? = null
+
     private val mLoaderCallback: BaseLoaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
             when (status) {
@@ -78,7 +77,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
             cascadeResource
         )
         val cascadeDir: File = getDir("cascade", Context.MODE_PRIVATE)
-        mCascadeFile = File(
+        val mCascadeFile = File(
             cascadeDir,
             name
         )
@@ -91,14 +90,14 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         }
         inputStream.close()
         outputStream.close()
-        val classifier = CascadeClassifier(mCascadeFile!!.absolutePath)
+        val classifier = CascadeClassifier(mCascadeFile.absolutePath)
 
         if (classifier.empty()) {
             Log.e(TAG, "Failed to load cascade classifier")
         } else
             Log.i(
                 TAG, "Loaded cascade classifier from "
-                        + mCascadeFile!!.absolutePath
+                        + mCascadeFile.absolutePath
             )
 
         return classifier
@@ -155,6 +154,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
     override fun onCameraViewStarted(width: Int, height: Int) {
         mRgba = Mat(height, width, CvType.CV_8UC4)
+        mGray = Mat(height, width, CvType.CV_8UC4)
         mRgbaF = Mat(height, width, CvType.CV_8UC4)
         mRgbaT = Mat(width, width, CvType.CV_8UC4)
         Log.i(TAG, "camera view started")
@@ -162,11 +162,25 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
     override fun onCameraViewStopped() {
         mRgba!!.release()
+        mGray!!.release()
         Log.i(TAG, "camera view stopped")
     }
 
     override fun onCameraFrame(inputFrame: CvCameraViewFrame): Mat { // TODO Auto-generated method stub
         mRgba = inputFrame.rgba()
+        mGray = inputFrame.gray()
+
+        val faces = MatOfRect()
+
+        faceClassifier?.detectMultiScale(mGray, faces,1.3, 5)
+
+        val facesArray = faces.toArray()
+
+        for (face in facesArray) {
+            Imgproc.rectangle(mRgba, Point(face.x.toDouble(), face.y.toDouble()),
+                Point((face.x + face.width).toDouble(), (face.y + face.height).toDouble()), Scalar(255.0, 0.0, 0.0, 255.0), 3)
+        }
+
         // Rotate mRgba 90 degrees
         Core.transpose(mRgba, mRgbaT)
         Imgproc.resize(mRgbaT, mRgbaF, mRgbaF!!.size(), 0.0, 0.0, 0)
