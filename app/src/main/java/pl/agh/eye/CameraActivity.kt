@@ -1,6 +1,7 @@
 package pl.agh.eye
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
@@ -21,7 +22,11 @@ import org.opencv.core.Core
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
+import org.opencv.objdetect.CascadeClassifier
 import pl.agh.eye.exercise.Exercise
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
 
 
 const val APPLICATION_SPECIFIC_PERMISSION_CODE = 7
@@ -33,6 +38,11 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     // Used in Camera selection from menu (when implemented)
     private val mIsJavaCamera = true
     private val mItemSwitchCamera: MenuItem? = null
+
+    // cascades
+    private var faceClassifier: CascadeClassifier? = null
+    private var eyeClassifier: CascadeClassifier? = null
+    private var mCascadeFile: File? = null
 
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
     var mRgba: Mat? = null
@@ -47,12 +57,51 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                         "OpenCV loaded successfully"
                     )
                     mOpenCvCameraView!!.enableView()
+
+                    faceClassifier = getClassifier("haarcascade_frontalface_default.xml",
+                        R.raw.haarcascade_frontalface_default)
+                    eyeClassifier = getClassifier(
+                        "haarcascade_eye.xml",
+                        R.raw.haarcascade_eye
+                    )
+
                 }
                 else -> {
                     super.onManagerConnected(status)
                 }
             }
         }
+    }
+
+    private fun getClassifier(name: String, cascadeResource: Int): CascadeClassifier {
+        val inputStream: InputStream = resources.openRawResource(
+            cascadeResource
+        )
+        val cascadeDir: File = getDir("cascade", Context.MODE_PRIVATE)
+        mCascadeFile = File(
+            cascadeDir,
+            name
+        )
+        val outputStream = FileOutputStream(mCascadeFile)
+
+        val buffer = ByteArray(4096)
+        var bytesRead: Int
+        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+            outputStream.write(buffer, 0, bytesRead)
+        }
+        inputStream.close()
+        outputStream.close()
+        val classifier = CascadeClassifier(mCascadeFile!!.absolutePath)
+
+        if (classifier.empty()) {
+            Log.e(TAG, "Failed to load cascade classifier")
+        } else
+            Log.i(
+                TAG, "Loaded cascade classifier from "
+                        + mCascadeFile!!.absolutePath
+            )
+
+        return classifier
     }
 
     init {
