@@ -110,6 +110,9 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         )
     }
 
+    // front = 1, back = 0
+    private var cameraIndex = 1
+
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.i(TAG, "called onCreate")
         super.onCreate(savedInstanceState)
@@ -123,6 +126,15 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
         val exercise = intent.getSerializableExtra("exercise") as Exercise
         Log.i(TAG, "############################### " + exercise.title)
+
+
+        switchCamerasButton.setOnClickListener {
+            cameraIndex = if (cameraIndex == 1) 0 else 1
+            mOpenCvCameraView!!.disableView()
+            mOpenCvCameraView!!.setCameraIndex(cameraIndex)
+            mOpenCvCameraView!!.enableView()
+
+        }
     }
 
     public override fun onPause() {
