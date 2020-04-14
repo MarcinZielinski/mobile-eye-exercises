@@ -166,15 +166,19 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         Log.i(TAG, "camera view stopped")
     }
 
+    private fun detect(classifier: CascadeClassifier?, img: Mat?): MatOfRect {
+        val elems = MatOfRect()
+        classifier?.detectMultiScale(img, elems,1.3, 5)
+        return elems
+    }
+
     override fun onCameraFrame(inputFrame: CvCameraViewFrame): Mat {
         mRgba = inputFrame.rgba()
         mGray = inputFrame.gray()
 
-        val faces = MatOfRect()
-        faceClassifier?.detectMultiScale(mGray, faces,1.3, 5)
 
-        val facesArray = faces.toArray()
-        if (facesArray.isNotEmpty()) {
+        val facesArray = detect(faceClassifier, mGray).toArray()
+        if (facesArray!!.isNotEmpty()) {
             val face = facesArray[0]
 
             Imgproc.rectangle(mRgba, Point(face.x.toDouble(), face.y.toDouble()),
@@ -182,10 +186,8 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
             val halfFace = Rect(face.x, face.y, face.width, face.height / 2)
             val grayHalfFace = Mat(mGray, halfFace)
-            val eyes = MatOfRect()
-            eyeClassifier?.detectMultiScale(grayHalfFace, eyes, 1.3, 5)
 
-            val eyesArray = eyes.toArray()
+            val eyesArray = detect(eyeClassifier, grayHalfFace).toArray()
             for (eye in eyesArray) {
                 Imgproc.rectangle(mRgba, Point((face.x + eye.x).toDouble(), (face.y + eye.y).toDouble()),
                     Point((face.x + eye.x + eye.width).toDouble(), (face.y + eye.y + eye.height).toDouble()), Scalar(0.0, 255.0, 255.0, 255.0), 3)
