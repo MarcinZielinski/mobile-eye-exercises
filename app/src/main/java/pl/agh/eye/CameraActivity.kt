@@ -19,7 +19,9 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2
 import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
 import org.opencv.core.*
+import org.opencv.features2d.FeatureDetector
 import org.opencv.imgproc.Imgproc
+import org.opencv.imgproc.Imgproc.THRESH_BINARY
 import org.opencv.objdetect.CascadeClassifier
 import pl.agh.eye.exercise.Exercise
 import java.io.File
@@ -40,6 +42,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     // cascades
     private var faceClassifier: CascadeClassifier? = null
     private var eyeClassifier: CascadeClassifier? = null
+    private var blobDetector: FeatureDetector? = null
 
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
     var mRgba: Mat? = null
@@ -64,6 +67,8 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                         R.raw.haarcascade_eye
                     )
 
+                    blobDetector = FeatureDetector.create(FeatureDetector.SIMPLEBLOB)
+                    blobDetector!!.read("android.resource://pl.agh.eye/raw/blob.xml")
                 }
                 else -> {
                     super.onManagerConnected(status)
@@ -196,13 +201,14 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
             Imgproc.rectangle(mRgba, Point(face.x.toDouble(), face.y.toDouble()),
                 Point((face.x + face.width).toDouble(), (face.y + face.height).toDouble()), Scalar(255.0, 0.0, 0.0, 255.0), 3)
 
-            val halfFace = Rect(face.x, face.y, face.width, face.height / 2)
-            val grayHalfFace = Mat(mGray, halfFace)
+            val grayFace = Mat(mGray, face)
 
-            val eyesArray = detect(eyeClassifier, grayHalfFace).toArray()
+            val eyesArray = detect(eyeClassifier, grayFace).toArray()
             for (eye in eyesArray) {
                 Imgproc.rectangle(mRgba, Point((face.x + eye.x).toDouble(), (face.y + eye.y).toDouble()),
                     Point((face.x + eye.x + eye.width).toDouble(), (face.y + eye.y + eye.height).toDouble()), Scalar(0.0, 255.0, 255.0, 255.0), 3)
+
+                var eyeBlob = getEyeGazeDirection(Mat(mGray, eye)) as Mat
             }
         }
 
@@ -212,6 +218,12 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         Core.flip(mRgbaF, mRgba, 1)
 
         return mRgba as Mat// This function must return
+    }
+
+    private fun getEyeGazeDirection(eye: Mat?): MatOfRect {
+        val blobEye = MatOfRect()
+        Imgproc.threshold(eye, blobEye, 42.0, 255.0, THRESH_BINARY)
+        return blobEye
     }
 
     companion object {
