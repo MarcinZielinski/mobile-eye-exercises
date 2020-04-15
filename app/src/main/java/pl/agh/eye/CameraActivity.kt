@@ -211,7 +211,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                 Imgproc.rectangle(mRgba, Point((face.x + eye.x).toDouble(), (face.y + eye.y).toDouble()),
                     Point((face.x + eye.x + eye.width).toDouble(), (face.y + eye.y + eye.height).toDouble()), Scalar(0.0, 255.0, 255.0, 255.0), 3)
 
-                getEyeGazeDirection(Mat(grayFace, eye))
+                getEyeGazeDirection(Mat(grayFace, eye), face, eye)
             }
         }
 
@@ -223,7 +223,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         return mRgba as Mat// This function must return
     }
 
-    private fun getEyeGazeDirection(eyeMat: Mat?) {
+    private fun getEyeGazeDirection(eyeMat: Mat?, face: Rect, eye: Rect) {
         val browlessEye = Mat(eyeMat, Rect(0, eyeMat!!.height() / 4, eyeMat.width(), eyeMat.height() - eyeMat.height() / 4))
         val blobEye = MatOfRect()
         Imgproc.threshold(browlessEye, blobEye, 42.0, 255.0, Imgproc.THRESH_BINARY)
@@ -232,32 +232,45 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         Imgproc.dilate(blobEye, blobEye, Mat(), Point(-1.0, -1.0), 4)
         Imgproc.medianBlur(blobEye, blobEye, 5)
 
-//        val contours = ArrayList<MatOfPoint>()
-//        val hierarchy = Mat()
-//        Imgproc.findContours(blobEye, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE)
-//
-//        for (cnt in contours) {
-//            val boundingBox = Imgproc.boundingRect(cnt)
-//            Imgproc.rectangle(mRgba, Point((face.x + eye1.x + boundingBox.x).toDouble(), (face.y + eye1.y+boundingBox.y).toDouble()),
-//                Point((face.x + eye1.x + boundingBox.x + boundingBox.width).toDouble(), (face.y + eye1.y + boundingBox.y + boundingBox.height).toDouble()),
-//                Scalar(255.0, 0.0, 255.0, 255.0), 3)
-//        }
+        drawIrisByContour(blobEye, face, eye, eyeMat)
 
-        Imgproc.resize(blobEye, mRgba, mRgba!!.size(), 0.0, 0.0)
 
-//        var centerX = 0
-//        var centerY = 0
-//        var pointsCount = 0
-//        for (x in 0..blobEye.width()) {
-//            for (y in 0..blobEye.height()) {
-//                if (blobEye.get(0,0)[0] != 255.0){
-//                    Log.e(TAG, "AAAAAAAAAAAAA " + x.toString() + " " + y.toString() + " " + blobEye.get(0,0)[0])
-//                    centerX += i % blobEye.cols()
-//                    centerY += i / blobEye.cols()
-//                    pointsCount++
-//                }
-//            }
-//        }
+//        Imgproc.resize(blobEye, mRgba, mRgba!!.size(), 0.0, 0.0)
+    }
+
+    private fun drawIrisByMeanCoords(blobEye: Mat?, face: Rect, eye:Rect, eyeMat: Mat) {
+        var centerX = 0
+        var centerY = 0
+        var pointsCount = 0
+        for (x in 0..blobEye!!.cols()) {
+            for (y in 0..blobEye.rows()) {
+                if (blobEye.get(x, y).isNotEmpty()) {
+                    if (blobEye.get(x, y)[0] != 255.0){
+                        centerX += x
+                        centerY += y
+                        pointsCount++
+                    }
+                }
+            }
+        }
+        if (pointsCount != 0) {
+            Imgproc.circle(mRgba, Point((face.x + eye.x + centerX/pointsCount).toDouble(),
+                (face.y + eye.y + eyeMat.height() / 4 + centerY/pointsCount).toDouble()),
+                20, Scalar(255.0, 0.0, 255.0, 255.0))
+        }
+    }
+
+    private fun drawIrisByContour(blobEye: Mat?, face: Rect, eye:Rect, eyeMat: Mat) {
+        val contours = ArrayList<MatOfPoint>()
+        val hierarchy = Mat()
+        Imgproc.findContours(blobEye, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE)
+
+        for (cnt in contours) {
+            val boundingBox = Imgproc.boundingRect(cnt)
+            Imgproc.rectangle(mRgba, Point((face.x + eye.x + boundingBox.x).toDouble(), (face.y + eye.y + boundingBox.y + eyeMat.height() / 4).toDouble()),
+                Point((face.x + eye.x + boundingBox.x + boundingBox.width).toDouble(), (face.y + eye.y + boundingBox.y + boundingBox.height + eyeMat.height() / 4).toDouble()),
+                Scalar(255.0, 0.0, 255.0, 255.0), 3)
+        }
     }
 
     companion object {
