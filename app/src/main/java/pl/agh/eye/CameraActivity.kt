@@ -21,7 +21,6 @@ import org.opencv.android.OpenCVLoader
 import org.opencv.core.*
 import org.opencv.features2d.FeatureDetector
 import org.opencv.imgproc.Imgproc
-import org.opencv.imgproc.Imgproc.THRESH_BINARY
 import org.opencv.objdetect.CascadeClassifier
 import pl.agh.eye.exercise.Exercise
 import java.io.File
@@ -198,7 +197,6 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         mRgba = inputFrame.rgba()
         mGray = inputFrame.gray()
 
-
         val facesArray = detect(faceClassifier, mGray).toArray()
         if (facesArray!!.isNotEmpty()) {
             val face = facesArray[0]
@@ -213,7 +211,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                 Imgproc.rectangle(mRgba, Point((face.x + eye.x).toDouble(), (face.y + eye.y).toDouble()),
                     Point((face.x + eye.x + eye.width).toDouble(), (face.y + eye.y + eye.height).toDouble()), Scalar(0.0, 255.0, 255.0, 255.0), 3)
 
-                getEyeGazeDirection(Mat(mGray, eye))
+                getEyeGazeDirection(Mat(grayFace, eye))
             }
         }
 
@@ -225,16 +223,41 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         return mRgba as Mat// This function must return
     }
 
-    private fun getEyeGazeDirection(eye: Mat?): MatOfRect {
-        val browlessEye = Mat(eye, Rect(0, eye!!.height() / 4, eye.width(), (3/4) * eye.height()))
+    private fun getEyeGazeDirection(eyeMat: Mat?) {
+        val browlessEye = Mat(eyeMat, Rect(0, eyeMat!!.height() / 4, eyeMat.width(), eyeMat.height() - eyeMat.height() / 4))
         val blobEye = MatOfRect()
-        Imgproc.threshold(browlessEye, blobEye, 42.0, 255.0, THRESH_BINARY)
+        Imgproc.threshold(browlessEye, blobEye, 42.0, 255.0, Imgproc.THRESH_BINARY)
 
         Imgproc.erode(blobEye, blobEye, Mat(), Point(-1.0, -1.0), 2)
         Imgproc.dilate(blobEye, blobEye, Mat(), Point(-1.0, -1.0), 4)
         Imgproc.medianBlur(blobEye, blobEye, 5)
 
-        return blobEye
+//        val contours = ArrayList<MatOfPoint>()
+//        val hierarchy = Mat()
+//        Imgproc.findContours(blobEye, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE)
+//
+//        for (cnt in contours) {
+//            val boundingBox = Imgproc.boundingRect(cnt)
+//            Imgproc.rectangle(mRgba, Point((face.x + eye1.x + boundingBox.x).toDouble(), (face.y + eye1.y+boundingBox.y).toDouble()),
+//                Point((face.x + eye1.x + boundingBox.x + boundingBox.width).toDouble(), (face.y + eye1.y + boundingBox.y + boundingBox.height).toDouble()),
+//                Scalar(255.0, 0.0, 255.0, 255.0), 3)
+//        }
+
+        Imgproc.resize(blobEye, mRgba, mRgba!!.size(), 0.0, 0.0)
+
+//        var centerX = 0
+//        var centerY = 0
+//        var pointsCount = 0
+//        for (x in 0..blobEye.width()) {
+//            for (y in 0..blobEye.height()) {
+//                if (blobEye.get(0,0)[0] != 255.0){
+//                    Log.e(TAG, "AAAAAAAAAAAAA " + x.toString() + " " + y.toString() + " " + blobEye.get(0,0)[0])
+//                    centerX += i % blobEye.cols()
+//                    centerY += i / blobEye.cols()
+//                    pointsCount++
+//                }
+//            }
+//        }
     }
 
     companion object {
