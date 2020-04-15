@@ -66,9 +66,14 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                         "haarcascade_eye.xml",
                         R.raw.haarcascade_eye
                     )
-
                     blobDetector = FeatureDetector.create(FeatureDetector.SIMPLEBLOB)
                     blobDetector!!.read("android.resource://pl.agh.eye/raw/blob.xml")
+                    if (blobDetector!!.empty()) {
+                        Log.i(
+                            TAG,
+                            "Blob fokt up"
+                        )
+                    }
                 }
                 else -> {
                     super.onManagerConnected(status)
@@ -208,7 +213,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                 Imgproc.rectangle(mRgba, Point((face.x + eye.x).toDouble(), (face.y + eye.y).toDouble()),
                     Point((face.x + eye.x + eye.width).toDouble(), (face.y + eye.y + eye.height).toDouble()), Scalar(0.0, 255.0, 255.0, 255.0), 3)
 
-                var eyeBlob = getEyeGazeDirection(Mat(mGray, eye)) as Mat
+                getEyeGazeDirection(Mat(mGray, eye))
             }
         }
 
@@ -221,8 +226,14 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     }
 
     private fun getEyeGazeDirection(eye: Mat?): MatOfRect {
+        val browlessEye = Mat(eye, Rect(0, eye!!.height() / 4, eye.width(), (3/4) * eye.height()))
         val blobEye = MatOfRect()
-        Imgproc.threshold(eye, blobEye, 42.0, 255.0, THRESH_BINARY)
+        Imgproc.threshold(browlessEye, blobEye, 42.0, 255.0, THRESH_BINARY)
+
+        Imgproc.erode(blobEye, blobEye, Mat(), Point(-1.0, -1.0), 2)
+        Imgproc.dilate(blobEye, blobEye, Mat(), Point(-1.0, -1.0), 4)
+        Imgproc.medianBlur(blobEye, blobEye, 5)
+
         return blobEye
     }
 
