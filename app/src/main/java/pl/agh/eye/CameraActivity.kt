@@ -268,9 +268,11 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
         for (cnt in contours) {
             val boundingBox = Imgproc.boundingRect(cnt)
-            Imgproc.rectangle(mRgba, Point((face.x + eye.x + boundingBox.x).toDouble(), (face.y + eye.y + boundingBox.y + eyeMat.height() / 4).toDouble()),
-                Point((face.x + eye.x + boundingBox.x + boundingBox.width).toDouble(), (face.y + eye.y + boundingBox.y + boundingBox.height + eyeMat.height() / 4).toDouble()),
-                Scalar(255.0, 0.0, 255.0, 255.0), 3)
+            if (boundingBox.width < eye.width / 1.5) {
+                Imgproc.rectangle(mRgba, Point((face.x + eye.x + boundingBox.x).toDouble(), (face.y + eye.y + boundingBox.y + eyeMat.height() / 4).toDouble()),
+                    Point((face.x + eye.x + boundingBox.x + boundingBox.width).toDouble(), (face.y + eye.y + boundingBox.y + boundingBox.height + eyeMat.height() / 4).toDouble()),
+                    Scalar(255.0, 0.0, 255.0, 255.0), 3)
+            }
         }
     }
 
