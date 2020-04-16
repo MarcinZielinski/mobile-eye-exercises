@@ -226,7 +226,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     private fun getEyeGazeDirection(eyeMat: Mat?, face: Rect, eye: Rect) {
         val browlessEye = Mat(eyeMat, Rect(0, eyeMat!!.height() / 4, eyeMat.width(), eyeMat.height() - eyeMat.height() / 4))
         val blobEye = MatOfRect()
-        Imgproc.threshold(browlessEye, blobEye, 42.0, 255.0, Imgproc.THRESH_BINARY)
+        Imgproc.threshold(browlessEye, blobEye, 80.0, 255.0, Imgproc.THRESH_BINARY)
 
         Imgproc.erode(blobEye, blobEye, Mat(), Point(-1.0, -1.0), 2)
         Imgproc.dilate(blobEye, blobEye, Mat(), Point(-1.0, -1.0), 4)
@@ -234,18 +234,17 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
         drawIrisByContour(blobEye, face, eye, eyeMat)
 
-
-//        Imgproc.resize(blobEye, mRgba, mRgba!!.size(), 0.0, 0.0)
+        // Imgproc.resize(blobEye, mRgba, mRgba!!.size(), 0.0, 0.0)
     }
 
     private fun drawIrisByMeanCoords(blobEye: Mat?, face: Rect, eye:Rect, eyeMat: Mat) {
         var centerX = 0
         var centerY = 0
         var pointsCount = 0
-        for (x in 0..blobEye!!.cols()) {
-            for (y in 0..blobEye.rows()) {
-                if (blobEye.get(x, y).isNotEmpty()) {
-                    if (blobEye.get(x, y)[0] != 255.0){
+        for (x in 0 until blobEye!!.cols()) {
+            for (y in 0 until blobEye.rows()) {
+                if (blobEye.get(y, x).isNotEmpty()) {
+                    if (blobEye.get(y, x)[0] != 255.0){
                         centerX += x
                         centerY += y
                         pointsCount++
@@ -256,7 +255,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         if (pointsCount != 0) {
             Imgproc.circle(mRgba, Point((face.x + eye.x + centerX/pointsCount).toDouble(),
                 (face.y + eye.y + eyeMat.height() / 4 + centerY/pointsCount).toDouble()),
-                20, Scalar(255.0, 0.0, 255.0, 255.0))
+                10, Scalar(255.0, 0.0, 255.0, 255.0), 3)
         }
     }
 
