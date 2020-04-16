@@ -40,6 +40,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     // cascades
     private var faceClassifier: CascadeClassifier? = null
     private var eyeClassifier: CascadeClassifier? = null
+    private var detectionUtils: DetectionUtils = DetectionUtils()
 
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
     var mRgba: Mat? = null
@@ -177,17 +178,11 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         Log.i(TAG, "camera view stopped")
     }
 
-    private fun detect(classifier: CascadeClassifier?, img: Mat?): MatOfRect {
-        val elems = MatOfRect()
-        classifier?.detectMultiScale(img, elems,1.3, 5)
-        return elems
-    }
-
     override fun onCameraFrame(inputFrame: CvCameraViewFrame): Mat {
         mRgba = inputFrame.rgba()
         mGray = inputFrame.gray()
 
-        val facesArray = detect(faceClassifier, mGray).toArray()
+        val facesArray = detectionUtils.detect(faceClassifier, mGray).toArray()
         if (facesArray!!.isNotEmpty()) {
             val face = facesArray[0]
 
@@ -196,13 +191,18 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
             val grayFace = Mat(mGray, face)
 
-            val eyesArray = detect(eyeClassifier, grayFace).toArray()
+            val eyesArray = detectionUtils.detect(eyeClassifier, grayFace).toArray()
             for (eye in eyesArray) {
                 if (eye.y < face.height / 2) {
                     Imgproc.rectangle(mRgba, Point((face.x + eye.x).toDouble(), (face.y + eye.y).toDouble()),
                         Point((face.x + eye.x + eye.width).toDouble(), (face.y + eye.y + eye.height).toDouble()), Scalar(0.0, 255.0, 255.0, 255.0), 3)
 
-                    getEyeGazeDirection(Mat(grayFace, eye), face, eye)
+                    val eyeMat = Mat(grayFace, eye)
+                    val eyeGaze = detectionUtils.getEyeGazeDirection(eyeMat, 60.0)
+                    if (eyeGaze.x >= 0.0 && eyeGaze.y >= 0.0)
+                        Imgproc.circle(mRgba, Point((face.x + eye.x + eyeGaze.x),
+                            (face.y + eye.y + eyeMat.height() / 4 + eyeGaze.y)),
+                            10, Scalar(255.0, 0.0, 255.0, 255.0), 3)
                 }
             }
         }
@@ -213,58 +213,6 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         Core.flip(mRgbaF, mRgba, 1)
 
         return mRgba as Mat// This function must return
-    }
-
-    private fun getEyeGazeDirection(eyeMat: Mat?, face: Rect, eye: Rect) {
-        val browlessEye = Mat(eyeMat, Rect(0, eyeMat!!.height() / 4, eyeMat.width(), eyeMat.height() - eyeMat.height() / 4))
-        val blobEye = MatOfRect()
-        Imgproc.threshold(browlessEye, blobEye, 42.0, 255.0, Imgproc.THRESH_BINARY)
-
-        Imgproc.erode(blobEye, blobEye, Mat(), Point(-1.0, -1.0), 2)
-        Imgproc.dilate(blobEye, blobEye, Mat(), Point(-1.0, -1.0), 4)
-        Imgproc.medianBlur(blobEye, blobEye, 5)
-
-        drawIrisByContour(blobEye, face, eye, eyeMat)
-        // drawIrisByMeanCoords(blobEye, face, eye, eyeMat)
-
-        // Imgproc.resize(blobEye, mRgba, mRgba!!.size(), 0.0, 0.0)
-    }
-
-    private fun drawIrisByMeanCoords(blobEye: Mat?, face: Rect, eye:Rect, eyeMat: Mat) {
-        var centerX = 0
-        var centerY = 0
-        var pointsCount = 0
-        for (x in 0 until blobEye!!.cols()) {
-            for (y in 0 until blobEye.rows()) {
-                if (blobEye.get(y, x).isNotEmpty()) {
-                    if (blobEye.get(y, x)[0] != 255.0){
-                        centerX += x
-                        centerY += y
-                        pointsCount++
-                    }
-                }
-            }
-        }
-        if (pointsCount != 0) {
-            Imgproc.circle(mRgba, Point((face.x + eye.x + centerX/pointsCount).toDouble(),
-                (face.y + eye.y + eyeMat.height() / 4 + centerY/pointsCount).toDouble()),
-                10, Scalar(255.0, 0.0, 255.0, 255.0), 3)
-        }
-    }
-
-    private fun drawIrisByContour(blobEye: Mat?, face: Rect, eye:Rect, eyeMat: Mat) {
-        val contours = ArrayList<MatOfPoint>()
-        val hierarchy = Mat()
-        Imgproc.findContours(blobEye, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE)
-
-        for (cnt in contours) {
-            val boundingBox = Imgproc.boundingRect(cnt)
-            if (boundingBox.width < eye.width / 1.5) {
-                Imgproc.rectangle(mRgba, Point((face.x + eye.x + boundingBox.x).toDouble(), (face.y + eye.y + boundingBox.y + eyeMat.height() / 4).toDouble()),
-                    Point((face.x + eye.x + boundingBox.x + boundingBox.width).toDouble(), (face.y + eye.y + boundingBox.y + boundingBox.height + eyeMat.height() / 4).toDouble()),
-                    Scalar(255.0, 0.0, 255.0, 255.0), 3)
-            }
-        }
     }
 
     companion object {
