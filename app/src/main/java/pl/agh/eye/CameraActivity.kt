@@ -19,7 +19,6 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2
 import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
 import org.opencv.core.*
-import org.opencv.features2d.FeatureDetector
 import org.opencv.imgproc.Imgproc
 import org.opencv.objdetect.CascadeClassifier
 import pl.agh.eye.exercise.Exercise
@@ -41,7 +40,6 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     // cascades
     private var faceClassifier: CascadeClassifier? = null
     private var eyeClassifier: CascadeClassifier? = null
-    private var blobDetector: FeatureDetector? = null
 
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
     var mRgba: Mat? = null
@@ -65,14 +63,6 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                         "haarcascade_eye.xml",
                         R.raw.haarcascade_eye
                     )
-                    blobDetector = FeatureDetector.create(FeatureDetector.SIMPLEBLOB)
-                    blobDetector!!.read("android.resource://pl.agh.eye/raw/blob.xml")
-                    if (blobDetector!!.empty()) {
-                        Log.i(
-                            TAG,
-                            "Blob fokt up"
-                        )
-                    }
                 }
                 else -> {
                     super.onManagerConnected(status)
@@ -228,13 +218,14 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     private fun getEyeGazeDirection(eyeMat: Mat?, face: Rect, eye: Rect) {
         val browlessEye = Mat(eyeMat, Rect(0, eyeMat!!.height() / 4, eyeMat.width(), eyeMat.height() - eyeMat.height() / 4))
         val blobEye = MatOfRect()
-        Imgproc.threshold(browlessEye, blobEye, 80.0, 255.0, Imgproc.THRESH_BINARY)
+        Imgproc.threshold(browlessEye, blobEye, 42.0, 255.0, Imgproc.THRESH_BINARY)
 
         Imgproc.erode(blobEye, blobEye, Mat(), Point(-1.0, -1.0), 2)
         Imgproc.dilate(blobEye, blobEye, Mat(), Point(-1.0, -1.0), 4)
         Imgproc.medianBlur(blobEye, blobEye, 5)
 
         drawIrisByContour(blobEye, face, eye, eyeMat)
+        // drawIrisByMeanCoords(blobEye, face, eye, eyeMat)
 
         // Imgproc.resize(blobEye, mRgba, mRgba!!.size(), 0.0, 0.0)
     }
