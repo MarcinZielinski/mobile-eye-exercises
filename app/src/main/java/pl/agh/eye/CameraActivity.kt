@@ -208,10 +208,12 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
             val eyesArray = detect(eyeClassifier, grayFace).toArray()
             for (eye in eyesArray) {
-                Imgproc.rectangle(mRgba, Point((face.x + eye.x).toDouble(), (face.y + eye.y).toDouble()),
-                    Point((face.x + eye.x + eye.width).toDouble(), (face.y + eye.y + eye.height).toDouble()), Scalar(0.0, 255.0, 255.0, 255.0), 3)
+                if (eye.y < face.height / 2) {
+                    Imgproc.rectangle(mRgba, Point((face.x + eye.x).toDouble(), (face.y + eye.y).toDouble()),
+                        Point((face.x + eye.x + eye.width).toDouble(), (face.y + eye.y + eye.height).toDouble()), Scalar(0.0, 255.0, 255.0, 255.0), 3)
 
-                getEyeGazeDirection(Mat(grayFace, eye), face, eye)
+                    getEyeGazeDirection(Mat(grayFace, eye), face, eye)
+                }
             }
         }
 
