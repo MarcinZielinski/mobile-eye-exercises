@@ -11,7 +11,21 @@ class DetectionUtils {
         return elems
     }
 
-    fun getEyeGazeDirection(eyeMat: Mat?, threshold: Double): Point {
+    fun getEyeGazeDirectionEdges(eyeMat: Mat?, threshold: Double): Point {
+        val browlessEye = Mat(
+            eyeMat,
+            Rect(0, eyeMat!!.height() / 4, eyeMat.width(), eyeMat.height() / 2)
+        )
+
+        val blobEye = MatOfRect()
+        Imgproc.threshold(browlessEye, blobEye, threshold, 255.0, Imgproc.THRESH_BINARY)
+        Imgproc.Canny(blobEye, blobEye, 5.0, 70.0, 3)
+        Imgproc.GaussianBlur(blobEye, blobEye, Size(3.0, 3.0), 0.0, 0.0)
+
+        return getIrisPosByMeanCoords(blobEye, 0.0)
+    }
+
+    fun getEyeGazeDirectionThreshold(eyeMat: Mat?, threshold: Double): Point {
         val browlessEye = Mat(
             eyeMat,
             Rect(0, eyeMat!!.height() / 4, eyeMat.width(), eyeMat.height() - eyeMat.height() / 4)
@@ -23,18 +37,17 @@ class DetectionUtils {
         Imgproc.dilate(blobEye, blobEye, Mat(), Point(-1.0, -1.0), 4)
         Imgproc.medianBlur(blobEye, blobEye, 5)
 
-        // return getIrisPosByContour(blobEye)
-        return getIrisPosByMeanCoords(blobEye)
+        return getIrisPosByMeanCoords(blobEye, 255.0)
     }
 
-    private fun getIrisPosByMeanCoords(blobEye: Mat?): Point {
+    private fun getIrisPosByMeanCoords(blobEye: Mat?, cutColor: Double): Point {
         var centerX = 0
         var centerY = 0
         var pointsCount = 0
         for (x in 0 until blobEye!!.cols()) {
             for (y in 0 until blobEye.rows()) {
                 if (blobEye.get(y, x).isNotEmpty()) {
-                    if (blobEye.get(y, x)[0] != 255.0) {
+                    if (blobEye.get(y, x)[0] != cutColor) {
                         centerX += x
                         centerY += y
                         pointsCount++

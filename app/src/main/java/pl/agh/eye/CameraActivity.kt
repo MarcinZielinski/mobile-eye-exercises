@@ -210,7 +210,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                     )
 
                     val eyeMat = Mat(grayFace, eye)
-                    val eyeGaze = detectionUtils.getEyeGazeDirection(eyeMat, 60.0)
+                    val eyeGaze = detectionUtils.getEyeGazeDirectionEdges(eyeMat, 60.0)
                     if (eyeGaze.x >= 0.0 && eyeGaze.y >= 0.0)
                         Imgproc.circle(
                             mRgba, Point(
