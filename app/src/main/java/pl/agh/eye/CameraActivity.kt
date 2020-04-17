@@ -58,8 +58,10 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                     )
                     mOpenCvCameraView!!.enableView()
 
-                    faceClassifier = getClassifier("haarcascade_frontalface_default.xml",
-                        R.raw.haarcascade_frontalface_default)
+                    faceClassifier = getClassifier(
+                        "haarcascade_frontalface_default.xml",
+                        R.raw.haarcascade_frontalface_default
+                    )
                     eyeClassifier = getClassifier(
                         "haarcascade_eye.xml",
                         R.raw.haarcascade_eye
@@ -186,23 +188,38 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         if (facesArray!!.isNotEmpty()) {
             val face = facesArray[0]
 
-            Imgproc.rectangle(mRgba, Point(face.x.toDouble(), face.y.toDouble()),
-                Point((face.x + face.width).toDouble(), (face.y + face.height).toDouble()), Scalar(255.0, 0.0, 0.0, 255.0), 3)
+            Imgproc.rectangle(
+                mRgba,
+                Point(face.x.toDouble(), face.y.toDouble()),
+                Point((face.x + face.width).toDouble(), (face.y + face.height).toDouble()),
+                Scalar(255.0, 0.0, 0.0, 255.0),
+                3
+            )
 
             val grayFace = Mat(mGray, face)
 
             val eyesArray = detectionUtils.detect(eyeClassifier, grayFace).toArray()
             for (eye in eyesArray) {
                 if (eye.y < face.height / 2) {
-                    Imgproc.rectangle(mRgba, Point((face.x + eye.x).toDouble(), (face.y + eye.y).toDouble()),
-                        Point((face.x + eye.x + eye.width).toDouble(), (face.y + eye.y + eye.height).toDouble()), Scalar(0.0, 255.0, 255.0, 255.0), 3)
+                    Imgproc.rectangle(
+                        mRgba, Point((face.x + eye.x).toDouble(), (face.y + eye.y).toDouble()),
+                        Point(
+                            (face.x + eye.x + eye.width).toDouble(),
+                            (face.y + eye.y + eye.height).toDouble()
+                        ), Scalar(0.0, 255.0, 255.0, 255.0), 3
+                    )
 
                     val eyeMat = Mat(grayFace, eye)
                     val eyeGaze = detectionUtils.getEyeGazeDirection(eyeMat, 60.0)
                     if (eyeGaze.x >= 0.0 && eyeGaze.y >= 0.0)
-                        Imgproc.circle(mRgba, Point((face.x + eye.x + eyeGaze.x),
-                            (face.y + eye.y + eyeMat.height() / 4 + eyeGaze.y)),
-                            10, Scalar(255.0, 0.0, 255.0, 255.0), 3)
+                        Imgproc.circle(
+                            mRgba, Point(
+                                (face.x + eye.x + eyeGaze.x),
+                                (face.y + eye.y + eyeMat.height() / 4 + eyeGaze.y)
+                            ),
+                            10, Scalar(255.0, 0.0, 255.0, 255.0), 3
+                        )
+                    return mRgba as Mat
                 }
             }
         }
