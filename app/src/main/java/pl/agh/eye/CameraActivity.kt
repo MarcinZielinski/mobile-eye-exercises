@@ -219,7 +219,6 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                             ),
                             10, Scalar(255.0, 0.0, 255.0, 255.0), 3
                         )
-                    return mRgba as Mat
                 }
             }
         }

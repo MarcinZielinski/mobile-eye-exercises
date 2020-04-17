@@ -58,19 +58,20 @@ class DetectionUtils {
         )
 
         var numOfBoxes = 0
-        var biggestBoundingBox = Rect()
+        var bestBoundingBox = Rect()
         for (cnt in contours) {
             val boundingBox = Imgproc.boundingRect(cnt)
             if (boundingBox.width < blobEye!!.width() / 1.5) {
-                if (boundingBox.width * boundingBox.height > biggestBoundingBox.width * biggestBoundingBox.height)
-                    biggestBoundingBox = boundingBox
+                if (boundingBox.width * boundingBox.height > bestBoundingBox.width * bestBoundingBox.height)
+                    bestBoundingBox = boundingBox
                 numOfBoxes += 1
             }
         }
+
         return if (numOfBoxes == 0) Point(-1.0, -1.0) else
             Point(
-                (biggestBoundingBox.x + biggestBoundingBox.width / 2).toDouble(),
-                (biggestBoundingBox.y + biggestBoundingBox.height / 2).toDouble()
+                (bestBoundingBox.x + bestBoundingBox.width / 2).toDouble(),
+                (bestBoundingBox.y + bestBoundingBox.height / 2).toDouble()
             )
     }
 }
