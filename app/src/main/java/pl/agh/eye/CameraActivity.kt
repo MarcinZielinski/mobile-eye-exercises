@@ -147,12 +147,12 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         }
 
         threshHoldView = findViewById(R.id.textViewTreshold);
-        threshHoldView.setText(threshold.toBigDecimal().toPlainString())
+        threshHoldView.text = threshold.toBigDecimal().toPlainString()
         val seekBar = findViewById<SeekBar>(R.id.seekBarTreshold)
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 threshold = progress.toDouble();
-                threshHoldView.setText(threshold.toBigDecimal().toPlainString());
+                threshHoldView.text = threshold.toBigDecimal().toPlainString()
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
