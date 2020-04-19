@@ -3,11 +3,15 @@ package pl.agh.eye
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
 import android.view.SurfaceView
 import android.view.WindowManager
+import android.widget.SeekBar
+import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -47,6 +51,9 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     var mGray: Mat? = null
     var mRgbaF: Mat? = null
     var mRgbaT: Mat? = null
+
+    private lateinit var threshHoldView : TextView;
+    private var threshold = 60.0
 
     private val mLoaderCallback: BaseLoaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
@@ -115,6 +122,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     // front = 1, back = 0
     private var cameraIndex = 1
 
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.i(TAG, "called onCreate")
         super.onCreate(savedInstanceState)
@@ -137,6 +145,26 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
             mOpenCvCameraView!!.enableView()
 
         }
+
+        threshHoldView = findViewById(R.id.textViewTreshold);
+        threshHoldView.setText(threshold.toBigDecimal().toPlainString())
+        val seekBar = findViewById<SeekBar>(R.id.seekBarTreshold)
+        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                threshold = progress.toDouble();
+                threshHoldView.setText(threshold.toBigDecimal().toPlainString());
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+//                TODO("Not yet implemented")
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+//                TODO("Not yet implemented")
+            }
+        })
+
+        seekBar.setProgress(threshold.toInt(), true);
     }
 
     public override fun onPause() {
@@ -210,7 +238,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                     )
 
                     val eyeMat = Mat(grayFace, eye)
-                    val eyeGaze = detectionUtils.getEyeGazeDirectionEdges(eyeMat, 60.0)
+                    val eyeGaze = detectionUtils.getEyeGazeDirectionEdges(eyeMat, threshold)
                     if (eyeGaze.x >= 0.0 && eyeGaze.y >= 0.0)
                         Imgproc.circle(
                             mRgba, Point(
