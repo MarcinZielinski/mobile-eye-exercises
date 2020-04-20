@@ -52,7 +52,6 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     var mRgbaF: Mat? = null
     var mRgbaT: Mat? = null
 
-    private lateinit var threshHoldView : TextView;
     private var threshold = 60.0
 
     private val mLoaderCallback: BaseLoaderCallback = object : BaseLoaderCallback(this) {
@@ -146,25 +145,21 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
         }
 
-        threshHoldView = findViewById(R.id.textViewTreshold);
-        threshHoldView.text = threshold.toBigDecimal().toPlainString()
-        val seekBar = findViewById<SeekBar>(R.id.seekBarTreshold)
-        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        textViewTreshold.text = threshold.toBigDecimal().toPlainString()
+        seekBarTreshold.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 threshold = progress.toDouble();
-                threshHoldView.text = threshold.toBigDecimal().toPlainString()
+                textViewTreshold.text = threshold.toBigDecimal().toPlainString()
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
-//                TODO("Not yet implemented")
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-//                TODO("Not yet implemented")
             }
         })
 
-        seekBar.setProgress(threshold.toInt(), true);
+        seekBarTreshold.setProgress(threshold.toInt(), true);
     }
 
     public override fun onPause() {
