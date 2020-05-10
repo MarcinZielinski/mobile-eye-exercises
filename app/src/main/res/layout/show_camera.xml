@@ -4,12 +4,44 @@
     xmlns:opencv="http://schemas.android.com/apk/res-auto"
     android:layout_height="match_parent">
 
-    <org.opencv.android.JavaCameraView
+    <Button
+        android:id="@+id/switchCamerasButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Switch cameras" />
+
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|left"
+        android:orientation="horizontal"
+        android:weightSum="10">
+
+        <SeekBar
+            android:layout_width="match_parent"
+            android:layout_weight="7"
+            android:layout_height="wrap_content"
+            android:id="@+id/seekBarTreshold"
+            />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text=""
+            android:layout_weight="3"
+            android:id="@+id/textViewTreshold"
+            android:textAlignment="center" />
+
+    </LinearLayout>
+
+    <pl.agh.eye.portrait_support.JavaCameraViewPortraitSupport
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:visibility="gone"
         android:id="@+id/show_camera_activity_java_surface_view"
         opencv:show_fps="true"
-        opencv:camera_id="any" />
+        opencv:camera_id="front" />
 
 </LinearLayout>

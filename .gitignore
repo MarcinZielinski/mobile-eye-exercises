@@ -185,3 +185,5 @@ gradle-app.setting
 # gradle/wrapper/gradle-wrapper.properties
 
 app/.cxx/
+
+/opencv-4.3.0-android-sdk/
