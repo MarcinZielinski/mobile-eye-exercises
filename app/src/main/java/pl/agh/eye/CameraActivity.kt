@@ -3,6 +3,7 @@ package pl.agh.eye
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -10,32 +11,28 @@ import android.view.MenuItem
 import android.view.SurfaceView
 import android.view.WindowManager
 import android.widget.SeekBar
-import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import kotlinx.android.synthetic.main.show_camera.*
 import org.opencv.android.BaseLoaderCallback
-import org.opencv.android.CameraBridgeViewBase
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2
 import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
 import org.opencv.objdetect.CascadeClassifier
 import pl.agh.eye.exercise.Exercise
+import pl.agh.eye.portrait_support.CameraBridgeViewBasePortraitSupport
+import pl.agh.eye.portrait_support.CameraBridgeViewBasePortraitSupport.CvCameraViewFrame
+import pl.agh.eye.portrait_support.CameraBridgeViewBasePortraitSupport.CvCameraViewListener2
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 
-
-const val APPLICATION_SPECIFIC_PERMISSION_CODE = 7
-
 class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     // Loads camera view of OpenCV for us to use. This lets us see using OpenCV
-    private var mOpenCvCameraView: CameraBridgeViewBase? = null
+    private var mOpenCvCameraView: CameraBridgeViewBasePortraitSupport? = null
 
     // Used in Camera selection from menu (when implemented)
     private val mIsJavaCamera = true
@@ -63,6 +60,9 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                         TAG,
                         "OpenCV loaded successfully"
                     )
+                    // Load native library after(!) OpenCV initialization
+                    System.loadLibrary("native-lib")
+                    mOpenCvCameraView!!.setCameraIndex(cameraIndex)
                     mOpenCvCameraView!!.enableView()
 
                     faceClassifier = getClassifier(
@@ -121,24 +121,22 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.i(TAG, "called onCreate")
         super.onCreate(savedInstanceState)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         checkAndRequestPermissions()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContentView(R.layout.show_camera)
         mOpenCvCameraView = show_camera_activity_java_surface_view
         mOpenCvCameraView!!.visibility = SurfaceView.VISIBLE
         mOpenCvCameraView!!.setCvCameraViewListener(this)
-        mOpenCvCameraView!!.enableView()
 
         val exercise = intent.getSerializableExtra("exercise") as Exercise
         Log.i(TAG, "############################### " + exercise.title)
-
 
         switchCamerasButton.setOnClickListener {
             cameraIndex = if (cameraIndex == 1) 0 else 1
             mOpenCvCameraView!!.disableView()
             mOpenCvCameraView!!.setCameraIndex(cameraIndex)
             mOpenCvCameraView!!.enableView()
-
         }
 
         textViewTreshold.text = threshold.toBigDecimal().toPlainString()
@@ -158,31 +156,48 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         seekBarTreshold.setProgress(threshold.toInt(), true);
     }
 
-    public override fun onPause() {
-        super.onPause()
-        mOpenCvCameraView?.disableView()
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        when (requestCode) {
+            CAMERA_PERMISSION_REQUEST -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    mOpenCvCameraView!!.setCameraPermissionGranted()
+                } else {
+                    val message = "Camera permission was not granted"
+                    Log.e(TAG, message)
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                }
+            }
+            else -> {
+                Log.e(TAG, "Unexpected permission request")
+            }
+        }
     }
 
-    public override fun onResume() {
+    public override fun onPause() {
+        super.onPause()
+        if (mOpenCvCameraView != null)
+            mOpenCvCameraView!!.disableView()
+    }
+
+    override fun onResume() {
         super.onResume()
         if (!OpenCVLoader.initDebug()) {
-            Log.d(
-                TAG,
-                "Internal OpenCV library not found. Using OpenCV Manager for initialization"
-            )
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback)
+            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization")
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback)
         } else {
-            Log.d(
-                TAG,
-                "OpenCV library found inside package. Using it!"
-            )
+            Log.d(TAG, "OpenCV library found inside package. Using it!")
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
     }
 
     public override fun onDestroy() {
         super.onDestroy()
-        mOpenCvCameraView?.disableView()
+        if (mOpenCvCameraView != null)
+            mOpenCvCameraView!!.disableView()
     }
 
     override fun onCameraViewStarted(width: Int, height: Int) {
@@ -200,9 +215,32 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     }
 
     override fun onCameraFrame(inputFrame: CvCameraViewFrame): Mat {
-        mRgba = inputFrame.rgba()
-        mGray = inputFrame.gray()
+        val currentOrientation = resources.configuration.orientation
+        if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+            mRgba = inputFrame.rgba()
+            mGray = inputFrame.gray()
+        } else {
+            mRgba = inputFrame.rgba()
+            mGray = inputFrame.gray()
+            val rotImage = Imgproc.getRotationMatrix2D(
+                Point(
+                    (mRgba!!.cols() / 2).toDouble(),
+                    (mRgba!!.rows() / 2).toDouble()
+                ), if (cameraIndex == 1) 90.0 else -90.0, 1.0
+            )
+            Imgproc.warpAffine(mRgba, mRgba, rotImage, mRgba!!.size())
+            Imgproc.warpAffine(mGray, mGray, rotImage, mRgba!!.size())
+            if (cameraIndex == 1) {
+                Core.flip(mRgba, mRgba, 1)
+                Core.flip(mGray, mGray, 1)
+            }
+        }
+        handleFaceAndEyesDetection()
 
+        return mRgba as Mat
+    }
+
+    private fun handleFaceAndEyesDetection() {
         val facesArray = detectionUtils.detect(faceClassifier, mGray).toArray()
         if (facesArray!!.isNotEmpty()) {
             val face = facesArray[0]
@@ -241,37 +279,21 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                 }
             }
         }
-
-        // Rotate mRgba 90 degrees
-        Core.transpose(mRgba, mRgbaT)
-        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF!!.size(), 0.0, 0.0, 0)
-        Core.flip(mRgbaF, mRgba, 1)
-
-        return mRgba as Mat// This function must return
     }
 
     companion object {
         // Used for logging success or failure messages
-        private const val TAG = "OCVSample::Activity"
+        private const val TAG = "CameraActivity"
+        private const val CAMERA_PERMISSION_REQUEST = 1
     }
 
-    private fun checkAndRequestPermissions(): Boolean {
-        val camera = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.CAMERA
+    private fun checkAndRequestPermissions() {
+        ActivityCompat.requestPermissions(
+            this@CameraActivity,
+            arrayOf(Manifest.permission.CAMERA),
+            CAMERA_PERMISSION_REQUEST
         )
-        val listPermissionsNeeded: MutableList<String> = ArrayList()
-        if (camera != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.CAMERA)
-        }
-        if (!listPermissionsNeeded.isEmpty()) {
-            ActivityCompat.requestPermissions(
-                this,
-                listPermissionsNeeded.toTypedArray(),
-                APPLICATION_SPECIFIC_PERMISSION_CODE
-            )
-            return false
-        }
-        return true
     }
+
+    private external fun adaptiveThresholdFromJNI(matAddr: Long)
 }

@@ -1,3 +1,5 @@
 rootProject.name='mobile-eye-exercises'
 include ':app'
-include ':openCVLibrary'
+
+include ':opencv'
+project(':opencv').projectDir = new File(opencvsdk + '/sdk')

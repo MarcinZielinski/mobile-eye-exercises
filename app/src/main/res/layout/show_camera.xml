@@ -36,7 +36,7 @@
 
     </LinearLayout>
 
-    <org.opencv.android.JavaCameraView
+    <pl.agh.eye.portrait_support.JavaCameraViewPortraitSupport
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:visibility="gone"
