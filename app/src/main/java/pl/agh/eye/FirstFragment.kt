@@ -30,7 +30,7 @@ class FirstFragment : Fragment() {
         val exerciseService = ExerciseService()
         val exercises = exerciseService.exercises
 
-        val listAdapter = ExerciseAdapter(context!!, exercises)
+        val listAdapter = ExerciseAdapter(requireContext(), exercises)
         exercisesGridView.adapter = listAdapter
 
 

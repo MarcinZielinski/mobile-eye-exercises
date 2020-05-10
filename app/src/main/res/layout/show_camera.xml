@@ -1,47 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
-    xmlns:opencv="http://schemas.android.com/apk/res-auto"
-    android:layout_height="match_parent">
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical">
 
-    <Button
-        android:id="@+id/switchCamerasButton"
+    <FrameLayout xmlns:opencv="http://schemas.android.com/apk/res-auto"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Switch cameras" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
+        <pl.agh.eye.portrait_support.JavaCameraViewPortraitSupport
+            android:id="@+id/show_camera_activity_java_surface_view"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:visibility="gone"
+            opencv:camera_id="front"
+            opencv:show_fps="true" />
+
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|left"
-        android:orientation="horizontal"
-        android:weightSum="10">
+        android:orientation="vertical">
 
-        <SeekBar
+        <Button
+            android:id="@+id/switchCamerasButton"
             android:layout_width="match_parent"
-            android:layout_weight="7"
             android:layout_height="wrap_content"
-            android:id="@+id/seekBarTreshold"
-            />
+            android:text="Switch cameras" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:text=""
-            android:layout_weight="3"
-            android:id="@+id/textViewTreshold"
-            android:textAlignment="center" />
 
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <SeekBar
+                android:id="@+id/seekBarTreshold"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="7" />
+
+            <TextView
+                android:id="@+id/textViewTreshold"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="3"
+                android:gravity="center"
+                android:text=""
+                android:textAlignment="center" />
+
+        </LinearLayout>
     </LinearLayout>
 
-    <pl.agh.eye.portrait_support.JavaCameraViewPortraitSupport
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:visibility="gone"
-        android:id="@+id/show_camera_activity_java_surface_view"
-        opencv:show_fps="true"
-        opencv:camera_id="front" />
+    <TextView
+        android:id="@+id/middleScreenTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_gravity="center"
+        android:shadowColor="#000000"
+        android:shadowDx="5"
+        android:shadowDy="5"
+        android:shadowRadius="5"
+        android:text=""
+        android:textColor="@color/design_default_color_background"
+        android:textSize="24sp" />
 
-</LinearLayout>
+</RelativeLayout>

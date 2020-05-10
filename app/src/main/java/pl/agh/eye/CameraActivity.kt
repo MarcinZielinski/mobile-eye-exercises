@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.MenuItem
 import android.view.SurfaceView
@@ -23,12 +24,15 @@ import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
 import org.opencv.objdetect.CascadeClassifier
 import pl.agh.eye.exercise.Exercise
+import pl.agh.eye.exercise.ExerciseRunner
+import pl.agh.eye.exercise.Observation
 import pl.agh.eye.portrait_support.CameraBridgeViewBasePortraitSupport
 import pl.agh.eye.portrait_support.CameraBridgeViewBasePortraitSupport.CvCameraViewFrame
 import pl.agh.eye.portrait_support.CameraBridgeViewBasePortraitSupport.CvCameraViewListener2
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.util.*
 
 class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     // Loads camera view of OpenCV for us to use. This lets us see using OpenCV
@@ -51,6 +55,10 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
     private var threshold = 60.0
     private val eyeRectThickness = 3
+
+    private lateinit var textToSpeech: TextToSpeech
+
+    private lateinit var exerciseRunner: ExerciseRunner
 
     private val mLoaderCallback: BaseLoaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
@@ -131,6 +139,13 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
         val exercise = intent.getSerializableExtra("exercise") as Exercise
         Log.i(TAG, "############################### " + exercise.title)
+
+        textToSpeech = TextToSpeech(this) {
+            Log.i("Camera Activity", "Initialized text to speech")
+        }
+        textToSpeech.language = Locale.US
+        exerciseRunner = ExerciseRunner(exercise, middleScreenTextView, textToSpeech)
+        exerciseRunner.start()
 
         switchCamerasButton.setOnClickListener {
             cameraIndex = if (cameraIndex == 1) 0 else 1
@@ -268,7 +283,16 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
 
                     val eyeMat = Mat(grayFace, eye)
                     val eyeGaze = detectionUtils.getEyeGazeDirectionEdges(eyeMat, threshold)
-                    if (eyeGaze != null)
+                    if (eyeGaze != null) {
+                        exerciseRunner.registerObservation(
+                            Observation(
+                                face,
+                                eye,
+                                eyeGaze,
+                                eyeMat.height()
+                            )
+                        )
+
                         Imgproc.circle(
                             mRgba, Point(
                                 (face.x + eye.x + eyeGaze.x),
@@ -276,6 +300,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                             ),
                             10, Scalar(255.0, 0.0, 255.0, 255.0), 3
                         )
+                    }
                 }
             }
         }
