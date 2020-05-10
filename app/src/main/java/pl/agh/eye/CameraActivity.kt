@@ -53,6 +53,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     var mRgbaT: Mat? = null
 
     private var threshold = 60.0
+    private val eyeRectThickness = 3
 
     private val mLoaderCallback: BaseLoaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
@@ -90,16 +91,11 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
             name
         )
         val outputStream = FileOutputStream(mCascadeFile)
-
-        val buffer = ByteArray(4096)
-        var bytesRead: Int
-        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-            outputStream.write(buffer, 0, bytesRead)
-        }
+        inputStream.copyTo(outputStream, 4096)
         inputStream.close()
         outputStream.close()
-        val classifier = CascadeClassifier(mCascadeFile.absolutePath)
 
+        val classifier = CascadeClassifier(mCascadeFile.absolutePath)
         if (classifier.empty()) {
             Log.e(TAG, "Failed to load cascade classifier")
         } else
@@ -216,7 +212,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                 Point(face.x.toDouble(), face.y.toDouble()),
                 Point((face.x + face.width).toDouble(), (face.y + face.height).toDouble()),
                 Scalar(255.0, 0.0, 0.0, 255.0),
-                3
+                eyeRectThickness
             )
 
             val grayFace = Mat(mGray, face)
@@ -229,12 +225,12 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                         Point(
                             (face.x + eye.x + eye.width).toDouble(),
                             (face.y + eye.y + eye.height).toDouble()
-                        ), Scalar(0.0, 255.0, 255.0, 255.0), 3
+                        ), Scalar(0.0, 255.0, 255.0, 255.0), eyeRectThickness
                     )
 
                     val eyeMat = Mat(grayFace, eye)
                     val eyeGaze = detectionUtils.getEyeGazeDirectionEdges(eyeMat, threshold)
-                    if (eyeGaze.x >= 0.0 && eyeGaze.y >= 0.0)
+                    if (eyeGaze != null)
                         Imgproc.circle(
                             mRgba, Point(
                                 (face.x + eye.x + eyeGaze.x),

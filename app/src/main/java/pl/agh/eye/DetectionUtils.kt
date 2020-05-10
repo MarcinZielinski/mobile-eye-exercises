@@ -11,9 +11,10 @@ class DetectionUtils {
         return elems
     }
 
-    fun getEyeGazeDirectionEdges(eyeMat: Mat?, threshold: Double): Point {
+    fun getEyeGazeDirectionEdges(eyeMat: Mat?, threshold: Double): Point? {
         val browlessEye = Mat(
             eyeMat,
+            // cuts 1/4 of the area above and below eye leaving 1/2 of original area
             Rect(0, eyeMat!!.height() / 4, eyeMat.width(), eyeMat.height() / 2)
         )
 
@@ -25,7 +26,7 @@ class DetectionUtils {
         return getIrisPosByMeanCoords(blobEye, 0.0)
     }
 
-    fun getEyeGazeDirectionThreshold(eyeMat: Mat?, threshold: Double): Point {
+    fun getEyeGazeDirectionThreshold(eyeMat: Mat?, threshold: Double): Point? {
         val browlessEye = Mat(
             eyeMat,
             Rect(0, eyeMat!!.height() / 4, eyeMat.width(), eyeMat.height() - eyeMat.height() / 4)
@@ -40,7 +41,7 @@ class DetectionUtils {
         return getIrisPosByMeanCoords(blobEye, 255.0)
     }
 
-    private fun getIrisPosByMeanCoords(blobEye: Mat?, cutColor: Double): Point {
+    private fun getIrisPosByMeanCoords(blobEye: Mat?, cutColor: Double): Point? {
         var centerX = 0
         var centerY = 0
         var pointsCount = 0
@@ -55,11 +56,11 @@ class DetectionUtils {
                 }
             }
         }
-        return if (pointsCount == 0) Point(-1.0, -1.0) else
+        return if (pointsCount == 0) null else
             Point((centerX / pointsCount).toDouble(), (centerY / pointsCount).toDouble())
     }
 
-    private fun getIrisPosByContour(blobEye: Mat?): Point {
+    private fun getIrisPosByContour(blobEye: Mat?): Point? {
         val contours = ArrayList<MatOfPoint>()
         val hierarchy = Mat()
         Imgproc.findContours(
@@ -81,7 +82,7 @@ class DetectionUtils {
             }
         }
 
-        return if (numOfBoxes == 0) Point(-1.0, -1.0) else
+        return if (numOfBoxes == 0) null else
             Point(
                 (bestBoundingBox.x + bestBoundingBox.width / 2).toDouble(),
                 (bestBoundingBox.y + bestBoundingBox.height / 2).toDouble()
