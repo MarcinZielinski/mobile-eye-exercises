@@ -89,11 +89,11 @@ class ExerciseRunner(
     }
 
     private fun deduceEyePosition(obs: Observation): EyePosition {
-        val factor = 0.3
+        val factor = 0.2
         when {
             obs.eyeGaze.x > (1 + factor )* eyesInTheMiddleObservation?.eyeGaze?.x!! -> {
                 when {
-                    obs.eyeGaze.y > factor * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
+                    obs.eyeGaze.y > (1 + factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
                         historyObservation.add(Pair(obs, EyePosition.UP_RIGHT))
                         Log.i(CLASS_TAG, "UP Right detection")
                     }
