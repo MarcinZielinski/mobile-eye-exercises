@@ -15,7 +15,7 @@ class ExerciseRunner(
     val middleTextView: TextView,
     val textToSpeech: TextToSpeech
 ) {
-    private val HISTORY_BUFFER_SIZE: Int = 5
+    private val HISTORY_BUFFER_SIZE: Int = 2
     private val CLASS_TAG = "EXERCISE RUNNER"
 
     private val UIHandler = Handler(Looper.getMainLooper())
@@ -90,6 +90,8 @@ class ExerciseRunner(
 
     private fun deduceEyePosition(obs: Observation): EyePosition {
         val factor = 0.2
+        val factorDown = 0.1
+        Log.i(CLASS_TAG, obs.eyeGaze.x.toString() + " " + obs.eyeGaze.y + " detection")
         when {
             obs.eyeGaze.x > (1 + factor )* eyesInTheMiddleObservation?.eyeGaze?.x!! -> {
                 when {
@@ -129,7 +131,7 @@ class ExerciseRunner(
                         historyObservation.add(Pair(obs, EyePosition.UP))
                         Log.i(CLASS_TAG, "Up detection")
                     }
-                    obs.eyeGaze.y < (1 - factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
+                    obs.eyeGaze.y < (1 - factorDown) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
                         historyObservation.add(Pair(obs, EyePosition.UP))
                         Log.i(CLASS_TAG, "Down detection")
                     }
@@ -137,15 +139,17 @@ class ExerciseRunner(
             }
         }
 
-        if (historyObservation.size >= HISTORY_BUFFER_SIZE) {
-            val firstFoundPosition: EyePosition = historyObservation.first().second
-            for (pair in historyObservation) {
-                if (pair.second != firstFoundPosition) {
-                    return EyePosition.CLOSED;
+        synchronized(historyObservation){
+            if (historyObservation.size >= HISTORY_BUFFER_SIZE) {
+                val firstFoundPosition: EyePosition = historyObservation.first().second
+                for (pair in historyObservation) {
+                    if (pair.second != firstFoundPosition) {
+                        return EyePosition.CLOSED;
+                    }
                 }
+                Log.i(CLASS_TAG, "Detected confirmed: $firstFoundPosition")
+                return firstFoundPosition;
             }
-            Log.i(CLASS_TAG, "Detected confirmed: $firstFoundPosition")
-            return firstFoundPosition;
         }
 
         return EyePosition.CLOSED;
