@@ -15,7 +15,7 @@ class ExerciseRunner(
     val middleTextView: TextView,
     val textToSpeech: TextToSpeech
 ) {
-    private val HISTORY_BUFFER_SIZE: Int = 2
+    private val HISTORY_BUFFER_SIZE: Int = 5
     private val CLASS_TAG = "EXERCISE RUNNER"
 
     private val UIHandler = Handler(Looper.getMainLooper())
@@ -24,7 +24,7 @@ class ExerciseRunner(
     private var currentInstruction: EyePosition = exercise.instructions.first()
 
     private var initialObservations: List<Observation> = emptyList()
-    private var historyObservation: EvictingQueue<Pair<Observation, EyePosition>> =
+    private var historyObservation: EvictingQueue<Observation> =
         EvictingQueue.create(HISTORY_BUFFER_SIZE)
     private var currentPhase = RUNNER_PHASE.INIT
     private var eyesInTheMiddleObservation: Observation? = null
@@ -91,66 +91,69 @@ class ExerciseRunner(
     private fun deduceEyePosition(obs: Observation): EyePosition {
         val factor = 0.2
         val factorDown = 0.1
-        Log.i(CLASS_TAG, obs.eyeGaze.x.toString() + " " + obs.eyeGaze.y + " detection")
+
+        historyObservation.add(obs)
+        if(historyObservation.size < HISTORY_BUFFER_SIZE){
+            return EyePosition.CLOSED;
+        }
+
+        var xAverage = 0.0;
+        var yAverage = 0.0;
+        synchronized(historyObservation){
+            xAverage = historyObservation.map { observation -> observation.eyeGaze.x }.average();
+            yAverage = historyObservation.map { observation -> observation.eyeGaze.y }.average();
+        }
+
+        val xGaze = xAverage
+        val yGaze = yAverage
+
         when {
-            obs.eyeGaze.x > (1 + factor )* eyesInTheMiddleObservation?.eyeGaze?.x!! -> {
+            xGaze > (1 + factor )* eyesInTheMiddleObservation?.eyeGaze?.x!! -> {
                 when {
-                    obs.eyeGaze.y > (1 + factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
-                        historyObservation.add(Pair(obs, EyePosition.UP_RIGHT))
+                    yGaze > (1 + factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
                         Log.i(CLASS_TAG, "UP Right detection")
+                        return EyePosition.UP_RIGHT;
                     }
-                    obs.eyeGaze.y < (1 - factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
-                        historyObservation.add(Pair(obs, EyePosition.DOWN_RIGHT))
+                    yGaze < (1 - factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
                         Log.i(CLASS_TAG, "Down Right detection")
+                        return EyePosition.DOWN_RIGHT;
                     }
                     else -> {
-                        historyObservation.add(Pair(obs, EyePosition.RIGHT))
                         Log.i(CLASS_TAG, "Right detection")
+                        return EyePosition.RIGHT;
                     }
                 }
             }
-            obs.eyeGaze.x < (1 - factor) * eyesInTheMiddleObservation?.eyeGaze?.x!! -> {
+            xGaze < (1 - factor) * eyesInTheMiddleObservation?.eyeGaze?.x!! -> {
                 when {
-                    obs.eyeGaze.y > (1 + factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
-                        historyObservation.add(Pair(obs, EyePosition.UP_LEFT))
+                    yGaze > (1 + factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
                         Log.i(CLASS_TAG, "Up Left detection")
+                        return EyePosition.UP_LEFT;
                     }
-                    obs.eyeGaze.y < (1 - factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
-                        historyObservation.add(Pair(obs, EyePosition.DOWN_LEFT))
+                    yGaze < (1 - factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
                         Log.i(CLASS_TAG, "Down Left detection")
+                        return EyePosition.DOWN_LEFT;
                     }
                     else -> {
-                        historyObservation.add(Pair(obs, EyePosition.LEFT))
                         Log.i(CLASS_TAG, "Left detection")
+                        return EyePosition.LEFT;
                     }
                 }
             }
             else -> {
                 when {
-                    obs.eyeGaze.y > (1 + factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
-                        historyObservation.add(Pair(obs, EyePosition.UP))
+                    yGaze > (1 + factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
                         Log.i(CLASS_TAG, "Up detection")
+                        return EyePosition.UP;
                     }
-                    obs.eyeGaze.y < (1 - factorDown) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
-                        historyObservation.add(Pair(obs, EyePosition.UP))
+                    yGaze < (1 - factorDown) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
                         Log.i(CLASS_TAG, "Down detection")
+                        return EyePosition.DOWN;
                     }
                 }
             }
         }
 
-        synchronized(historyObservation){
-            if (historyObservation.size >= HISTORY_BUFFER_SIZE) {
-                val firstFoundPosition: EyePosition = historyObservation.first().second
-                for (pair in historyObservation) {
-                    if (pair.second != firstFoundPosition) {
-                        return EyePosition.CLOSED;
-                    }
-                }
-                Log.i(CLASS_TAG, "Detected confirmed: $firstFoundPosition")
-                return firstFoundPosition;
-            }
-        }
 
         return EyePosition.CLOSED;
     }
