@@ -32,7 +32,7 @@ class ExerciseRunner(
         val timer = Timer()
         middleTextView.text = "Stare at the screen for 5 seconds"
 
-        timer.schedule(4000) { decreaseCountdown(timer, 5) }
+        timer.schedule(4000) { decreaseCountdown(timer, 60) }
     }
 
 

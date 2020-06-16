@@ -229,7 +229,14 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
         Log.i(TAG, "camera view stopped")
     }
 
+    var prevTime = System.currentTimeMillis()
+    var dif = 0L
     override fun onCameraFrame(inputFrame: CvCameraViewFrame): Mat {
+        dif = System.currentTimeMillis() - prevTime
+        prevTime = System.currentTimeMillis()
+        val fps = 1000/dif.toFloat()
+        Log.i("FPSS", fps.toString())
+
         val currentOrientation = resources.configuration.orientation
         if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE) {
             mRgba = inputFrame.rgba()
@@ -256,6 +263,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
     }
 
     private fun handleFaceAndEyesDetection() {
+        ///////////////////////NIC////////////////////////////////////////////
         val facesArray = detectionUtils.detect(faceClassifier, mGray).toArray()
         if (facesArray!!.isNotEmpty()) {
             val face = facesArray[0]
@@ -267,7 +275,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                 Scalar(255.0, 0.0, 0.0, 255.0),
                 eyeRectThickness
             )
-
+            ///////////////////////SAM RYJ////////////////////////////////////////////
             val grayFace = Mat(mGray, face)
 
             val eyesArray = detectionUtils.detect(eyeClassifier, grayFace).toArray()
@@ -281,6 +289,7 @@ class CameraActivity : AppCompatActivity(), CvCameraViewListener2 {
                         ), Scalar(0.0, 255.0, 255.0, 255.0), eyeRectThickness
                     )
 
+                    ///////////////////////RYJ I OCZY////////////////////////////////////////////
                     val eyeMat = Mat(grayFace, eye)
                     val eyeGaze = detectionUtils.getEyeGazeDirectionEdges(eyeMat, threshold)
                     if (eyeGaze != null) {
