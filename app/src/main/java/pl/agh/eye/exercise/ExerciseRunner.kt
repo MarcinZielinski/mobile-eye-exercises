@@ -7,6 +7,8 @@ import android.util.Log
 import android.widget.TextView
 import com.google.common.collect.EvictingQueue
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.fixedRateTimer
 import kotlin.concurrent.schedule
 
 
@@ -21,6 +23,7 @@ class ExerciseRunner(
     private val UIHandler = Handler(Looper.getMainLooper())
 
     private var currentInstructionIndex: Int = 0
+    private var currentTimesIndex: Int = 0
     private var currentInstruction: EyePosition = exercise.instructions.first()
 
     private var initialObservations: List<Observation> = emptyList()
@@ -69,11 +72,39 @@ class ExerciseRunner(
 
             currentPhase = RUNNER_PHASE.EXERCISE
 
+            registerClosedEyesDetector()
+
             nextExercise()
         }
     }
 
+    private var closedEyesCount = AtomicInteger(0)
+
+    private fun registerClosedEyesDetector() {
+        fixedRateTimer(initialDelay = 100, period = 50, action = {
+            if (closedEyesCount.incrementAndGet() > 5) {
+                eyesAreClosed()
+            }
+        })
+    }
+
+    private fun refreshClosedEyes() {
+        closedEyesCount.set(0)
+    }
+
+    private fun eyesAreClosed() {
+        Log.i(CLASS_TAG, "Deduced position: CLOSED")
+        if (EyePosition.CLOSED == currentInstruction) {
+            Log.i(CLASS_TAG, "Next exercise")
+            if (currentPhase == RUNNER_PHASE.EXERCISE) {
+                nextExercise()
+            }
+        }
+    }
+
     fun registerObservation(obs: Observation) {
+        refreshClosedEyes()
+
         if (currentPhase == RUNNER_PHASE.INIT) {
             initialObservations = initialObservations + obs
         } else if (currentPhase == RUNNER_PHASE.EXERCISE) {
@@ -108,31 +139,15 @@ class ExerciseRunner(
         val yGaze = yAverage
 
         when {
-            xGaze > (1 + factor )* eyesInTheMiddleObservation?.eyeGaze?.x!! -> {
+            xGaze > (1 + factorDown)* eyesInTheMiddleObservation?.eyeGaze?.x!! -> {
                 when {
-                    yGaze > (1 + factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
-                        Log.i(CLASS_TAG, "UP Right detection")
-                        return EyePosition.UP_RIGHT;
-                    }
-                    yGaze < (1 - factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
-                        Log.i(CLASS_TAG, "Down Right detection")
-                        return EyePosition.DOWN_RIGHT;
-                    }
-                    else -> {
-                        Log.i(CLASS_TAG, "Right detection")
-                        return EyePosition.RIGHT;
-                    }
-                }
-            }
-            xGaze < (1 - factor) * eyesInTheMiddleObservation?.eyeGaze?.x!! -> {
-                when {
-                    yGaze > (1 + factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
-                        Log.i(CLASS_TAG, "Up Left detection")
-                        return EyePosition.UP_LEFT;
-                    }
-                    yGaze < (1 - factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
+                    yGaze > (1 + factorDown) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
                         Log.i(CLASS_TAG, "Down Left detection")
                         return EyePosition.DOWN_LEFT;
+                    }
+                    yGaze < (1 - factorDown) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
+                        Log.i(CLASS_TAG, "Up Left detection")
+                        return EyePosition.UP_LEFT;
                     }
                     else -> {
                         Log.i(CLASS_TAG, "Left detection")
@@ -140,22 +155,38 @@ class ExerciseRunner(
                     }
                 }
             }
+            xGaze < (1 - factorDown) * eyesInTheMiddleObservation?.eyeGaze?.x!! -> {
+                when {
+                    yGaze > (1 + factorDown) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
+                        Log.i(CLASS_TAG, "Down Right detection")
+                        return EyePosition.DOWN_RIGHT;
+                    }
+                    yGaze < (1 - factorDown) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
+                        Log.i(CLASS_TAG, "Up Right detection")
+                        return EyePosition.UP_RIGHT;
+                    }
+                    else -> {
+                        Log.i(CLASS_TAG, "Right detection")
+                        return EyePosition.RIGHT;
+                    }
+                }
+            }
             else -> {
                 when {
                     yGaze > (1 + factor) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
-                        Log.i(CLASS_TAG, "Up detection")
-                        return EyePosition.UP;
-                    }
-                    yGaze < (1 - factorDown) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
                         Log.i(CLASS_TAG, "Down detection")
                         return EyePosition.DOWN;
+                    }
+                    yGaze < (1 - factorDown) * eyesInTheMiddleObservation?.eyeGaze?.y!! -> {
+                        Log.i(CLASS_TAG, "Up detection")
+                        return EyePosition.UP;
                     }
                 }
             }
         }
 
 
-        return EyePosition.CLOSED;
+        return EyePosition.CENTER;
     }
 
 
@@ -164,21 +195,36 @@ class ExerciseRunner(
             currentInstruction = exercise.instructions[currentInstructionIndex]
             textToSpeech.speak(
                 currentInstruction.name.replace('_', ' '),
-                TextToSpeech.QUEUE_ADD,
+                TextToSpeech.QUEUE_FLUSH,
                 null,
                 currentInstruction.name
             )
             UIHandler.post { middleTextView.text = currentInstruction.name }
             currentInstructionIndex++
+        } else if (currentTimesIndex < exercise.times) {
+            currentInstructionIndex = 0
+            currentTimesIndex++
+            nextExercise()
         } else {
             UIHandler.post {
                 middleTextView.text = "Congratulations! You've finished exercise. You can go back."
             }
+
+            if(currentPhase == RUNNER_PHASE.EXERCISE) {
+                textToSpeech.speak(
+                    "Finished",
+                    TextToSpeech.QUEUE_ADD,
+                    null,
+                    "FINISHED"
+                )
+            }
+            currentPhase = RUNNER_PHASE.FINISHED
+
             Log.i(CLASS_TAG, "exercise finished")
         }
     }
 }
 
 enum class RUNNER_PHASE {
-    INIT, EXERCISE, RECALIBRATION
+    INIT, EXERCISE, FINISHED
 }
